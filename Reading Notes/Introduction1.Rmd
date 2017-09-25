@@ -1,0 +1,172 @@
+---
+title: "Linear Models with R Chapter 1 `Introduction` Notes"
+output: html_notebook
+---
+
+# Before you start
+
+# Initial data analysis
+
+Numerical Summaries
+
+* means
+* standar deviations
+* max and min
+* correlations
+* ...
+
+Graphical summaries:
+
+* boxplots
+* histograms
+* density plots
+* scatterplots
+
+In the plots, look for outliers, data-entry erroes, skewed or unusual distributions and structure
+
+```{r}
+data(pima, package = "faraway")
+head(pima)
+```
+```{r}
+summary(pima)
+```
+
+Note that some people have a blood pressure of 0 (diastolic), that is not possible, something must be fishy.
+
+```{r}
+sort(pima$diastolic)
+```
+Those zeros are most likely missing values, let's set them to NA
+
+```{r}
+pima$diastolic[pima$diastolic == 0] <- NA
+pima$glucose[pima$glucose == 0] <- NA
+pima$triceps[pima$triceps == 0] <- NA
+pima$insulin[pima$insulin == 0] <- NA
+pima$bmi[pima$bmi == 0] <- NA
+```
+
+Test is a categorical variable, we should encode it as a factor and not numerical
+
+```{r}
+pima$test <- factor(pima$test)
+summary(pima$test)
+```
+
+It would be better if we used descriptive labels
+
+```{r}
+levels(pima$test) <- c("negative", "positive")
+summary(pima)
+```
+
+Now let's do some plots
+
+```{r}
+hist(pima$diastolic, xlab = "Diastolic", main = "")
+```
+
+```{r}
+plot(density(pima$diastolic, na.rm = TRUE), main = "")
+```
+
+```{r}
+plot(sort(pima$diastolic), ylab = "Sorted Diastolic")
+```
+
+```{r}
+plot(diabetes ~ diastolic, pima)
+```
+
+```{r}
+plot(diabetes ~ test, pima)
+```
+
+ggplot2 allows us to produce similar versions of these plots
+
+```{r}
+require(ggplot2)
+ggplot(pima, aes(x = diastolic)) + geom_histogram()
+ggplot(pima, aes(x = diastolic)) + geom_density()
+ggplot(pima, aes(x = diastolic, y = diabetes)) + geom_point()
+```
+
+aes  sepecifies what you see
+
+```{r}
+ggplot(pima, aes(x = diastolic, y = diabetes, shape = test)) + geom_point() + theme(legend.position = "top", legend.direction = "horizontal")
+ggplot(pima, aes(x = diastolic, y = diabetes)) + geom_point(size = 1) + facet_grid(~ test)
+```
+
+# When to Use Linear Modeling
+
+Linear modeling is used to explain/model the relationship between a single variable Y (called response, outcome, output, or dependent variable) and one or more predictor (or input, independent, or explanatory variables).
+
+Linear modeling aka. regression analysis
+
+When there are more than one predictor variable ==> multiple regression
+
+When there are more than one response ==> multivariate regression.
+
+Response:
+* must be continuous
+
+Explanatory Variable:
+* can be categorical, discrete, or continuous
+
+# History
+
+```{r}
+data(manilius, package = "faraway")
+head(manilius)
+```
+
+```{r}
+(moon3 <- aggregate(manilius[, 1:3], list(manilius$group), sum))
+```
+
+```{r}
+solve(cbind(9, moon3$sinang, moon3$cosang), moon3$arc)
+```
+
+Least Squares
+
+$arc_i = \beta + \alpha*sinang_i + \gamma*cosang_i + \epsilon_i$
+
+We find $\alpha$, $\beta$, and $\gamma$ that minimize the sum of the squared errors $\epsilon^2$
+
+```{r}
+lmod <- lm(arc ~ sinang + cosang, manilius)
+coef(lmod)
+```
+
+```{r}
+data(GaltonFamilies, package = "HistData")
+plot(childHeight ~ midparentHeight, GaltonFamilies)
+```
+
+We propose
+
+$childheight = \alpha + \beta*midparentHeight + \epsilon$
+
+```{r}
+lmod <- lm(childHeight ~ midparentHeight, GaltonFamilies)
+coef(lmod)
+plot(childHeight ~ midparentHeight, GaltonFamilies)
+abline(lmod)
+```
+
+```{r}
+(beta <- with(GaltonFamilies, cor(midparentHeight, childHeight) * sd(childHeight) / sd(midparentHeight)))
+(alpha <- with(GaltonFamilies, mean(childHeight) - beta * mean(midparentHeight)))
+```
+
+```{r}
+(beta1 <- with(GaltonFamilies, sd(childHeight) / sd(midparentHeight)))
+(alpha1 <- with(GaltonFamilies, mean(childHeight) - beta1 * mean(midparentHeight)))
+plot(childHeight ~ midparentHeight, GaltonFamilies)
+abline(lmod)
+abline(alpha1, beta1, lty = 2)
+```
+
